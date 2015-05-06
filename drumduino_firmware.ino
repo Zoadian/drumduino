@@ -9,16 +9,16 @@ LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 
 
 enum DrumduinoFirmwareSettings {
-	PORT_CNT = 1,
-	CHAN_PER_PORT_CNT = 1,
+	PORT_CNT = 6,
+	CHAN_PER_PORT_CNT = 8,
 	PAD_CNT = PORT_CNT * CHAN_PER_PORT_CNT,
 	FRAME_BUFFER_SIZE = 3,
 };
 
 enum Pins {
 	PIN_MULTIPLEX_A = 2,
-	PIN_MULTIPLEX_B = 3 ,
-	PIN_MULTIPLEX_C = 4 ,
+	PIN_MULTIPLEX_B = 3,
+	PIN_MULTIPLEX_C = 4,
 
 	PIN_SOFTSERIAL_RX = 5,
 	PIN_SOFTSERIAL_TX = 6,
@@ -41,12 +41,12 @@ enum Pins {
 //=================================================================================
 // Maximum sampling frequency    // Resolution
 enum Prescaler {
-	Prescaler_2   = B00000000, // 16 MHz / 2 = 8 MHz            //
-	Prescaler_4   = B00000010, // 16 MHz / 4 = 4 MHz            // ~5.9
-	Prescaler_8   = B00000011, // 16 MHz / 8 = 2 MHz            // ~7.4
-	Prescaler_16  = B00000100, // 16 MHz / 16 = 1 MHz           // ~8.6
-	Prescaler_32  = B00000101, // 16 MHz / 32 = 500 kHz         // ~8.9
-	Prescaler_64  = B00000110, // 16 MHz / 64 = 250 kHz         // ~9.0
+	Prescaler_2 = B00000000, // 16 MHz / 2 = 8 MHz            //
+	Prescaler_4 = B00000010, // 16 MHz / 4 = 4 MHz            // ~5.9
+	Prescaler_8 = B00000011, // 16 MHz / 8 = 2 MHz            // ~7.4
+	Prescaler_16 = B00000100, // 16 MHz / 16 = 1 MHz           // ~8.6
+	Prescaler_32 = B00000101, // 16 MHz / 32 = 500 kHz         // ~8.9
+	Prescaler_64 = B00000110, // 16 MHz / 64 = 250 kHz         // ~9.0
 	Prescaler_128 = B00000111, // 16 MHz / 128 = 125 kHz        // ~9.1
 };
 
@@ -60,14 +60,14 @@ inline void setPrescaler(int prescaler) {
 //  Ad Pin
 //=================================================================================
 enum AdPin {
-	AdPin_0   = B00000000,
-	AdPin_1   = B00000001,
-	AdPin_2   = B00000010,
-	AdPin_3   = B00000011,
-	AdPin_4   = B00000100,
-	AdPin_5   = B00000101,
-	AdPin_6   = B00000110, // Bei Atmega8 nur in der Gehäusebauform TQFP und MLF verfügbar, nicht in PDIP
-	AdPin_7   = B00000111, // Bei Atmega8 nur in der Gehäusebauform TQFP und MLF verfügbar, nicht in PDIP
+	AdPin_0 = B00000000,
+	AdPin_1 = B00000001,
+	AdPin_2 = B00000010,
+	AdPin_3 = B00000011,
+	AdPin_4 = B00000100,
+	AdPin_5 = B00000101,
+	AdPin_6 = B00000110, // Bei Atmega8 nur in der Geh?usebauform TQFP und MLF verf?gbar, nicht in PDIP
+	AdPin_7 = B00000111, // Bei Atmega8 nur in der Geh?usebauform TQFP und MLF verf?gbar, nicht in PDIP
 	AdPin_Vbg = B00001110, // 1.23V
 	AdPin_GND = B00001111, // 0V
 };
@@ -80,11 +80,11 @@ inline void setAdPin(int adPin) {
 //=================================================================================
 // ADC Alignment
 //=================================================================================
-// Das Ergebnis wird in den Registern ADCH/ADCL linksbündig ausgerichtet.
-// Die 8 höchstwertigen Bits des Ergebnisses werden in ADCH abgelegt.
+// Das Ergebnis wird in den Registern ADCH/ADCL linksb?ndig ausgerichtet.
+// Die 8 h?chstwertigen Bits des Ergebnisses werden in ADCH abgelegt.
 // Die verbleibenden 2 niederwertigen Bits werden im Register ADCL in den Bits 6 und 7 abgelegt.
 enum AdcAlignment {
-	ADAlignmentLeft  = B00100000,
+	ADAlignmentLeft = B00100000,
 	ADAlignmentRight = B00000000,
 };
 
@@ -114,12 +114,12 @@ inline void multiplexSelectChan(uint8_t chan) {
 //=================================================================================
 namespace midi {
 	/// http://www.midi.org/techspecs/midimessages.php
-#if 0
+#if 1
 	struct SysexFrame {
 		byte begin = 0xf0;
 		byte manufacturer = 42;
+		byte msgType = 0;
 		unsigned long time1 = 0;
-		unsigned long time2 = 0;
 		byte values[PAD_CNT] = { 0 };
 		byte end = 0xF7;
 	};
@@ -329,6 +329,8 @@ void setup() {
 //
 //=================================================================================
 void loop() {
+	midi::SysexFrame sysexFrame;
+
 	uint64_t& frameCounter = g_runtime.frameCounter;
 	size_t curFrameIdx = frameCounter % FRAME_BUFFER_SIZE;
 	size_t lastFrameIdx = (frameCounter - 1) % FRAME_BUFFER_SIZE;
@@ -479,6 +481,13 @@ STATE_AGAIN:
 	}
 
 #endif
+	sysexFrame.time1 = millis();
+	for(int pad = 0; pad < PAD_CNT; ++pad) {
+		sysexFrame.values[pad] = g_runtime.value[pad][curFrameIdx];
+	}
+
+
+	Serial.write((const char*)&sysexFrame, sizeof(sysexFrame));
 
 	++frameCounter;
 }
