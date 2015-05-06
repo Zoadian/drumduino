@@ -1,4 +1,46 @@
 <RCC>
-    <qresource prefix="conftool">
-    </qresource>
+  <qresource prefix="drumduino">
+    <file>address19.svg</file>
+    <file>black403.svg</file>
+    <file>black406.svg</file>
+    <file>black407.svg</file>
+    <file>book209.svg</file>
+    <file>broken45.svg</file>
+    <file>calculator70.svg</file>
+    <file>calendar159.svg</file>
+    <file>delete82.svg</file>
+    <file>document162.svg</file>
+    <file>done.svg</file>
+    <file>down123.svg</file>
+    <file>file96.svg</file>
+    <file>file99.svg</file>
+    <file>hanging15.svg</file>
+    <file>heart295.svg</file>
+    <file>home150.svg</file>
+    <file>info22.svg</file>
+    <file>link61.svg</file>
+    <file>list90.svg</file>
+    <file>locked59.svg</file>
+    <file>music235.svg</file>
+    <file>musical116.svg</file>
+    <file>new104.svg</file>
+    <file>old63.svg</file>
+    <file>planet30.svg</file>
+    <file>print42.svg</file>
+    <file>print43.svg</file>
+    <file>puzzle38.svg</file>
+    <file>refresh57.svg</file>
+    <file>return10.svg</file>
+    <file>returning7.svg</file>
+    <file>right245.svg</file>
+    <file>round60.svg</file>
+    <file>round61.svg</file>
+    <file>round62.svg</file>
+    <file>share40.svg</file>
+    <file>ship11.svg</file>
+    <file>square182.svg</file>
+    <file>unlocked44.svg</file>
+    <file>up177.svg</file>
+    <file>zoom70.svg</file>
+  </qresource>
 </RCC>

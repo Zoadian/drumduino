@@ -88,7 +88,7 @@
       <Filter>Resource Files</Filter>
     </CustomBuild>
     <CustomBuild Include="qcustomplot.h">
-      <Filter>Header Files</Filter>
+      <Filter>Resource Files</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

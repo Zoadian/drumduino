@@ -48,7 +48,71 @@ conftool::conftool(QWidget* parent)
 	: QMainWindow(parent) {
 	ui.setupUi(this);
 
-	_serial = std::make_shared<Serial>(L"COM5", 2000000);
+	setWindowIcon(QIcon(":/drumduino/ship11.svg"));
+	
+	// Setup Pad Selector & buffers
+	for(int pad = 0; pad < PAD_CNT; ++pad) {
+		ui.cbPadSelector->addItem(QIcon(":/drumduino/ship11.svg"), QString("Pad %0").arg(pad + 1), pad);
+		m_x[pad] = QVector<qreal>(DRUMDU_BUFFER_SIZE);
+		m_y[pad] = QVector<qreal>(DRUMDU_BUFFER_SIZE);
+
+		for (int i = 0; i < DRUMDU_BUFFER_SIZE; ++i) {
+			m_x[pad][i] = i;
+			m_y[pad][i] = (sin(i*0.03) + 1) * 128 / 2;
+		}
+	}
+
+	connect(ui.cbPadSelector, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int idx) {
+		m_pad = ui.cbPadSelector->itemData(idx).toInt();
+
+		ui.lePadName->setPlaceholderText(QString("Pad %0").arg(m_pad + 1));
+		ui.lePadName->setText(QString("Pad %0").arg(m_pad + 1));
+	});
+
+
+	// Setup Graph
+	auto wgtPlot = new QCustomPlot(ui.centralWidget);
+	wgtPlot->setAntialiasedElements(QCP::aeAll);
+	wgtPlot->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+	wgtPlot->setMinimumHeight(100);
+	auto curve = wgtPlot->addGraph();
+	wgtPlot->xAxis->setRange(0, DRUMDU_BUFFER_SIZE);
+	wgtPlot->yAxis->setRange(0, 128);
+	wgtPlot->xAxis->setTicks(false);
+	ui.gbGraph->layout()->addWidget(wgtPlot);
+
+
+	wgtPlot->setBackground(qApp->palette().button());
+	QPen pen(qApp->palette().midlight().color());
+	pen.setStyle(Qt::PenStyle::DotLine);
+	wgtPlot->xAxis->grid()->setPen(pen);
+	wgtPlot->yAxis->grid()->setPen(pen);
+	wgtPlot->xAxis->setBasePen(qApp->palette().windowText().color());
+	wgtPlot->yAxis->setBasePen(qApp->palette().windowText().color());
+	wgtPlot->xAxis->setTickPen(qApp->palette().windowText().color());
+	wgtPlot->yAxis->setTickPen(qApp->palette().windowText().color());
+
+
+
+	// Install EventFilter to change styles
+	for(auto dial : this->findChildren<QDial*>()) {
+		dial->installEventFilter(this);
+	}
+
+
+
+	ui.cbPadSelector->setCurrentIndex(1);
+	ui.cbPadSelector->setCurrentIndex(0);
+
+
+
+
+
+
+#if 0
+
+
+	m_serial = std::make_shared<Serial>(L"COM5", 2000000);
 
 	std::thread th([this]() {
 
@@ -76,13 +140,14 @@ conftool::conftool(QWidget* parent)
 
 		file.close();
 #else
-		for (int pad = 0; pad < PAD_CNT; ++pad) {
+
+		for(int pad = 0; pad < PAD_CNT; ++pad) {
 			m_x[pad] = QVector<qreal>(DRUMDU_BUFFER_SIZE);
 			m_y[pad] = QVector<qreal>(DRUMDU_BUFFER_SIZE);
 		}
 
 		for(;;) {
-			readNextFrame(_serial, [this/*, &file*/](unsigned long time, std::array<byte, PAD_CNT>& frame) {
+			readNextFrame(m_serial, [this/*, &file*/](unsigned long time, std::array<byte, PAD_CNT>& frame) {
 
 				for(int pad = 0; pad < PAD_CNT; ++pad) {
 					m_x[pad][m_frameCnt % m_x[pad].size()] = m_frameCnt % DRUMDU_BUFFER_SIZE;
@@ -100,103 +165,20 @@ conftool::conftool(QWidget* parent)
 
 	th.detach();
 
-
-
-	for (int pad = 0; pad < PAD_CNT; ++pad) {
-		m_plots[pad] = new QCustomPlot(ui.centralWidget);
-
-		m_plots[pad]->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-		m_plots[pad]->setMinimumHeight(100);
-		auto curve = m_plots[pad]->addGraph();
-		m_plots[pad]->xAxis->setRange(0, DRUMDU_BUFFER_SIZE);
-		m_plots[pad]->yAxis->setRange(-1, 128);
-
-		ui.centralWidget->layout()->addWidget(m_plots[pad]);
-	}
+#endif
 
 
 	QTimer* timer = new QTimer(this);
-	connect(timer, &QTimer::timeout, [this]() {
+	connect(timer, &QTimer::timeout, [this, wgtPlot]() {
 		try {
-			for (int pad = 0; pad < PAD_CNT; ++pad) {
-				//m_plots[pad]->xAxis->setRange(m_x[pad][(m_frameCnt + 1) % DRUMDU_BUFFER_SIZE], m_x[pad][(m_frameCnt) % DRUMDU_BUFFER_SIZE]);
-
-				m_plots[pad]->graph(0)->setData(m_x[pad], m_y[pad]);
-				m_plots[pad]->replot();
-			}
+			wgtPlot->graph(0)->setData(m_x[m_pad], m_y[m_pad]);
+			wgtPlot->replot();
 		}
 		catch(...) {
 			qDebug() << "eception";
 		}
 	});
 	timer->start(100);
-
-
-
-
-
-
-#if 0
-
-	for(int pad = 0; pad < 1; ++pad) {
-		m_x[pad] = QVector<qreal>(DRUMDU_BUFFER_SIZE);
-		m_y[pad] = QVector<qreal>(DRUMDU_BUFFER_SIZE);
-	}
-
-
-	for(int pad = 0; pad < 1; ++pad) {
-		m_plots[pad] = new QCustomPlot(ui.centralWidget);
-
-		m_plots[pad]->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-		m_plots[pad]->setMinimumHeight(100);
-		auto curve = m_plots[pad]->addGraph();
-		m_plots[pad]->xAxis->setRange(0, 127);
-		m_plots[pad]->yAxis->setRange(-10, 256);
-
-		ui.centralWidget->layout()->addWidget(m_plots[pad]);
-
-
-	}
-
-
-	_serial = std::make_shared<Serial>(L"COM5", 2000000);
-
-
-	QTimer* timer = new QTimer(this);
-	connect(timer, &QTimer::timeout, [this]() {
-		try {
-			for(int i = 0; i < DRUMDU_BUFFER_SIZE; ++i) {
-				readNextFrame(_serial, [this](unsigned long time, std::array<byte, PAD_CNT>& frame) {
-
-
-					for(int pad = 0; pad < 1; ++pad) {
-						m_x[pad][m_frameCnt % DRUMDU_BUFFER_SIZE] = time;
-						m_y[pad][m_frameCnt % DRUMDU_BUFFER_SIZE] = frame[pad];
-
-
-					}
-
-
-					++m_frameCnt;
-
-
-				});
-			}
-
-			for(int pad = 0; pad < 1; ++pad) {
-				m_plots[pad]->xAxis->setRange(m_x[pad][(m_frameCnt + 1) % DRUMDU_BUFFER_SIZE], m_x[pad][(m_frameCnt) % DRUMDU_BUFFER_SIZE]);
-
-				m_plots[pad]->graph(0)->setData(m_x[pad], m_y[pad]);
-				m_plots[pad]->replot();
-			}
-		}
-		catch(...) {
-			qDebug() << "eception";
-		}
-	});
-	timer->start(10);
-
-#endif
 }
 
 conftool::~conftool() {
